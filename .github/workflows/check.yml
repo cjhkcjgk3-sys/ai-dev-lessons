@@ -1,0 +1,54 @@
+name: 提交检查
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 检查署名和正式区改动
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git config core.quotepath false
+          if [ "$EVENT" = "pull_request" ]; then
+            commits=$(git rev-list --no-merges "$PR_BASE..$PR_HEAD")
+          elif [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            commits=$(git rev-list --no-merges -1 "$AFTER")
+          else
+            commits=$(git rev-list --no-merges "$BEFORE..$AFTER")
+          fi
+          fail=0
+          for c in $commits; do
+            msg=$(git log -1 --format=%B "$c")
+            subject=$(git log -1 --format='%h %s' "$c")
+            if ! printf '%s\n' "$msg" | grep -Eq '^AI-Model:[[:space:]]*[^[:space:]]+'; then
+              echo "::error::缺少署名行 AI-Model: —— $subject"
+              fail=1
+            fi
+            if git diff-tree --no-commit-id --name-only -r "$c" | grep -q '^正式/'; then
+              if ! printf '%s\n' "$msg" | grep -q '审核通过'; then
+                echo "::error::改动了 正式/ 但提交说明没有“审核通过” —— $subject"
+                fail=1
+              fi
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "提交说明最后一行要写 AI-Model: 家族名（如 AI-Model: Grok）。模型不能直接改 正式/，请交到 待审/。"
+            exit 1
+          fi
+          echo "全部提交通过检查。"
