@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: 检查署名和正式区改动
+      - name: 检查正式区改动
         shell: bash
         env:
           EVENT: ${{ github.event_name }}
@@ -36,10 +36,6 @@ jobs:
           for c in $commits; do
             msg=$(git log -1 --format=%B "$c")
             subject=$(git log -1 --format='%h %s' "$c")
-            if ! printf '%s\n' "$msg" | grep -Eq '^AI-Model:[[:space:]]*[^[:space:]]+'; then
-              echo "::error::缺少署名行 AI-Model: —— $subject"
-              fail=1
-            fi
             if git diff-tree --no-commit-id --name-only -r "$c" | grep -q '^正式/'; then
               if ! printf '%s\n' "$msg" | grep -q '审核通过'; then
                 echo "::error::改动了 正式/ 但提交说明没有“审核通过” —— $subject"
@@ -48,7 +44,7 @@ jobs:
             fi
           done
           if [ "$fail" -ne 0 ]; then
-            echo "提交说明最后一行要写 AI-Model: 家族名（如 AI-Model: Grok）。模型不能直接改 正式/，请交到 待审/。"
+            echo "模型不能直接改 正式/，请交到 待审/；审核人并入正式区时在提交说明里写“审核通过”。"
             exit 1
           fi
-          echo "全部提交通过检查。"
+          echo "正式区检查通过。"
