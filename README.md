@@ -20,6 +20,7 @@ README.md / AGENTS.md / 总索引.md / CHANGELOG.md
     软件工程/索引.md、方法-01.md … 方法-16.md
   专项经验/索引.md
     插件开发/索引.md
+    功能设计/索引.md、六径推演.md
   通用准则.md、通用方法.md（旧编号兼容页）
   检查清单.md、工作流程.md
   models/、cases/（保留原路径）
