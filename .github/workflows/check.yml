@@ -25,3 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/check_changelog.py
+      - name: 检查活动经验索引与编号
+        run: |
+          python3 .github/scripts/test_check_structure.py
+          python3 .github/scripts/check_structure.py
